@@ -33,9 +33,6 @@
 
   # -------------------------
   # Global CORS (ALL responses, incl. 4xx/5xx)
-  # IMPORTANT:
-  # - If you use cookies/credentials, DO NOT use "*"
-  # - If you use Bearer tokens (Authorization header), "*" is fine
   # -------------------------
   header {
     Access-Control-Allow-Origin "*"
@@ -62,50 +59,46 @@
   # AI_CHAT (SSE-safe)
   # -------------------------
   handle /ai_chat/* {
-  reverse_proxy {
-    dynamic a {
-      name ai-chat.railway.internal
-      port 8080
-      refresh 1s
-      dial_timeout 30s
-      versions ipv4 ipv6
+    reverse_proxy {
+      dynamic a {
+        name ai-chat.railway.internal
+        port 8080
+        refresh 1s
+        dial_timeout 30s
+        versions ipv4
+      }
+
+      # CRITICAL: No retries for POST bodies (prevents "invalid Read on closed Body")
+      lb_retries 0
+      lb_try_duration 0s
+      lb_try_interval 0s
+
+      # SSE hardening
+      flush_interval -1
+      transport http {
+        versions 1.1
+        response_header_timeout 0
+        read_timeout 0
+        write_timeout 0
+      }
+
+      header_up Host {upstream_hostport}
+      header_up X-Forwarded-Proto {scheme}
+      header_up X-Forwarded-Host {host}
+      header_up X-Forwarded-For {remote_host}
+
+      # Optional but helpful for streaming stability
+      header_up Connection "keep-alive"
+
+      # Remove any CORS headers coming from upstream to avoid duplicates
+      header_down -Access-Control-Allow-Origin
+      header_down -Access-Control-Allow-Methods
+      header_down -Access-Control-Allow-Headers
+      header_down -Access-Control-Allow-Credentials
+      header_down -Access-Control-Expose-Headers
+      header_down -Access-Control-Max-Age
     }
-
-    # -------------------------
-    # CRITICAL: No retries for POST bodies (prevents "invalid Read on closed Body")
-    # -------------------------
-    lb_retries 0
-    lb_try_duration 0s
-    lb_try_interval 0s
-
-    # -------------------------
-    # SSE hardening
-    # -------------------------
-    flush_interval -1
-    transport http {
-      versions 1.1
-      response_header_timeout 0
-      read_timeout 0
-      write_timeout 0
-    }
-
-    header_up Host {upstream_hostport}
-    header_up X-Forwarded-Proto {scheme}
-    header_up X-Forwarded-Host {host}
-    header_up X-Forwarded-For {remote_host}
-
-    # Optional but helpful for streaming stability
-    header_up Connection "keep-alive"
-
-    # Remove any CORS headers coming from upstream to avoid duplicates
-    header_down -Access-Control-Allow-Origin
-    header_down -Access-Control-Allow-Methods
-    header_down -Access-Control-Allow-Headers
-    header_down -Access-Control-Allow-Credentials
-    header_down -Access-Control-Expose-Headers
-    header_down -Access-Control-Max-Age
   }
-}
 
   # -------------------------
   # IMAGE
@@ -117,7 +110,7 @@
         port 8080
         refresh 1s
         dial_timeout 30s
-        versions ipv4 ipv6
+        versions ipv4
       }
 
       import lb_settings
