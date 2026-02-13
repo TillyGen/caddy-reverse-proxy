@@ -1,94 +1,51 @@
-# global options
-{
-  admin off
-  persist_config off
-  auto_https off
-
-  log {
-    format json
-  }
-
-  servers {
-    trusted_proxies static private_ranges
-  }
-}
-
-(lb_settings) {
-  lb_policy round_robin
-  lb_retries 100
-  lb_try_duration 10s
-  lb_try_interval 250ms
-}
-
-(passive_health_checks) {
-  fail_duration 60s
-  max_fails 300
-  unhealthy_latency 5s
-  unhealthy_request_count 200
-}
-
 :{$PORT} {
-  # access logs
   log {
     format json
   }
 
-  # gateway health
   respond /health "gateway-ok" 200
 
   # =========================
-  # AI_CHAT -> ai-chat
-  # Extern: /ai_chat/*
-  # Intern: /* (Prefix wird entfernt)
-  #   /ai_chat/health -> /health
-  #   /ai_chat/stream -> /stream
+  # CORS Preflight (WeWeb Editor, Browser)
   # =========================
-  handle_path /ai_chat/* {
-    reverse_proxy {
-      dynamic a {
-        name ai-chat.railway.internal
-        port 8080
-        refresh 1s
+  @preflight method OPTIONS
+  handle @preflight {
+    header Access-Control-Allow-Origin "*"
+    header Access-Control-Allow-Methods "GET, POST, OPTIONS"
+    header Access-Control-Allow-Headers "Content-Type, Authorization, X-Request-Id"
+    header Access-Control-Max-Age "86400"
+    respond "" 204
+  }
+
+  # Optional: CORS Header auch für normale Responses am Gateway ergänzen
+  header {
+    Access-Control-Allow-Origin "*"
+    Access-Control-Allow-Headers "Content-Type, Authorization, X-Request-Id"
+    Access-Control-Allow-Methods "GET, POST, OPTIONS"
+    Access-Control-Max-Age "86400"
+  }
+
+  # =========================
+  # AI_CHAT -> ai-chat (Prefix bleibt erhalten)
+  # =========================
+  handle /ai_chat/* {
+    reverse_proxy ai-chat.railway.internal:8080 {
+      flush_interval -1
+      transport http {
         dial_timeout 30s
-        versions ipv4 ipv6
+        response_header_timeout 0
+        read_timeout 0
+        write_timeout 0
       }
-
-      import lb_settings
-      import passive_health_checks
-
-      header_up Host {upstream_hostport}
-      header_up X-Forwarded-Proto {scheme}
-      header_up X-Forwarded-Host {host}
-      header_up X-Forwarded-For {remote_host}
     }
   }
 
   # =========================
-  # IMAGE -> ai-image
-  # Extern: /image/*
-  # Intern: /* (Prefix wird entfernt)
-  #   /image/health -> /health
+  # IMAGE -> ai-image (Prefix bleibt erhalten)
   # =========================
-  handle_path /image/* {
-    reverse_proxy {
-      dynamic a {
-        name ai-image.railway.internal
-        port 8080
-        refresh 1s
-        dial_timeout 30s
-        versions ipv4 ipv6
-      }
-
-      import lb_settings
-      import passive_health_checks
-
-      header_up Host {upstream_hostport}
-      header_up X-Forwarded-Proto {scheme}
-      header_up X-Forwarded-Host {host}
-      header_up X-Forwarded-For {remote_host}
-    }
+  handle /image/* {
+    reverse_proxy ai-image.railway.internal:8080
   }
 
-  # fallback
   respond "Not found" 404
 }
