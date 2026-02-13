@@ -149,10 +149,31 @@
         versions ipv4
       }
 
+      # Keine Retries bei POST, sonst doppelte Verarbeitung
+      lb_retries 0
+      lb_try_duration 0s
+      lb_try_interval 0s
+
+      # Sinnvolle Timeouts für non-SSE Workloads
+      transport http {
+        versions 1.1
+        response_header_timeout 60s
+        read_timeout 300s
+        write_timeout 300s
+      }
+
       header_up Host {upstream_hostport}
       header_up X-Forwarded-Proto {scheme}
       header_up X-Forwarded-Host {host}
       header_up X-Forwarded-For {remote_host}
+
+      # Falls Upstream eigene CORS-Header setzt: dedupe
+      header_down -Access-Control-Allow-Origin
+      header_down -Access-Control-Allow-Methods
+      header_down -Access-Control-Allow-Headers
+      header_down -Access-Control-Allow-Credentials
+      header_down -Access-Control-Expose-Headers
+      header_down -Access-Control-Max-Age
     }
   }
 
