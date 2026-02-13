@@ -1,17 +1,3 @@
-# =========================
-# Caddy Gateway for Railway
-# Domain: api.tillygen.de
-# Routes:
-#   /health      -> gateway-ok
-#   /ai_chat/*   -> ai-chat service (prefix kept)
-#   /image/*     -> ai-image service (prefix kept)
-#
-# CORS strategy:
-#   - Caddy answers ONLY preflight (OPTIONS) to guarantee browser compatibility
-#   - Backend (Express) sets Access-Control-Allow-Origin for real responses
-#   => avoids "multiple values" CORS error
-# =========================
-
 {
   admin off
   persist_config off
@@ -46,31 +32,34 @@
   }
 
   # -------------------------
-  # Gateway health
+  # Global CORS (ALL responses, incl. 4xx/5xx)
+  # IMPORTANT:
+  # - If you use cookies/credentials, DO NOT use "*"
+  # - If you use Bearer tokens (Authorization header), "*" is fine
   # -------------------------
-  respond /health "gateway-ok" 200
+  header {
+    Access-Control-Allow-Origin "*"
+    Access-Control-Allow-Methods "GET, POST, OPTIONS"
+    Access-Control-Allow-Headers "Content-Type, Authorization, X-Request-Id"
+    Access-Control-Expose-Headers "Content-Type, X-Request-Id"
+    Access-Control-Max-Age "86400"
+  }
 
   # -------------------------
-  # CORS Preflight (OPTIONS)
-  # IMPORTANT:
-  # - Do NOT set global Access-Control-Allow-Origin here, otherwise it can
-  #   collide with your Express CORS headers and cause:
-  #   "Access-Control-Allow-Origin contains multiple values"
-  # - If you want to allow multiple origins, keep preflight permissive and
-  #   let Express decide the final origin.
+  # Preflight
   # -------------------------
   @preflight method OPTIONS
   handle @preflight {
-    header Access-Control-Allow-Origin "*"
-    header Access-Control-Allow-Methods "GET, POST, OPTIONS"
-    header Access-Control-Allow-Headers "Content-Type, Authorization, X-Request-Id"
-    header Access-Control-Max-Age "86400"
     respond "" 204
   }
 
   # -------------------------
+  # Health
+  # -------------------------
+  respond /health "gateway-ok" 200
+
+  # -------------------------
   # AI_CHAT (SSE-safe)
-  # prefix is kept: /ai_chat/stream -> /ai_chat/stream
   # -------------------------
   handle /ai_chat/* {
     reverse_proxy {
@@ -97,12 +86,19 @@
       header_up X-Forwarded-Proto {scheme}
       header_up X-Forwarded-Host {host}
       header_up X-Forwarded-For {remote_host}
+
+      # Remove any CORS headers coming from upstream to avoid duplicates
+      header_down -Access-Control-Allow-Origin
+      header_down -Access-Control-Allow-Methods
+      header_down -Access-Control-Allow-Headers
+      header_down -Access-Control-Allow-Credentials
+      header_down -Access-Control-Expose-Headers
+      header_down -Access-Control-Max-Age
     }
   }
 
   # -------------------------
   # IMAGE
-  # prefix is kept: /image/* -> /image/*
   # -------------------------
   handle /image/* {
     reverse_proxy {
@@ -121,6 +117,14 @@
       header_up X-Forwarded-Proto {scheme}
       header_up X-Forwarded-Host {host}
       header_up X-Forwarded-For {remote_host}
+
+      # Remove any CORS headers coming from upstream to avoid duplicates
+      header_down -Access-Control-Allow-Origin
+      header_down -Access-Control-Allow-Methods
+      header_down -Access-Control-Allow-Headers
+      header_down -Access-Control-Allow-Credentials
+      header_down -Access-Control-Expose-Headers
+      header_down -Access-Control-Max-Age
     }
   }
 
