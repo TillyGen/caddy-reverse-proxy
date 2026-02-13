@@ -99,6 +99,38 @@
       header_down -Access-Control-Max-Age
     }
   }
+  # -------------------------
+  # AI_STRUCT
+  # -------------------------
+
+handle /ai_struct/* {
+  reverse_proxy {
+    dynamic a {
+      name ai-structuring.railway.internal
+      port 8080
+      refresh 1s
+      dial_timeout 30s
+      versions ipv4
+    }
+
+    # Keine Retries bei POST, sonst doppelte LLM-Calls
+    lb_retries 0
+    lb_try_duration 0s
+    lb_try_interval 0s
+
+    header_up Host {upstream_hostport}
+    header_up X-Forwarded-Proto {scheme}
+    header_up X-Forwarded-Host {host}
+    header_up X-Forwarded-For {remote_host}
+
+    header_down -Access-Control-Allow-Origin
+    header_down -Access-Control-Allow-Methods
+    header_down -Access-Control-Allow-Headers
+    header_down -Access-Control-Allow-Credentials
+    header_down -Access-Control-Expose-Headers
+    header_down -Access-Control-Max-Age
+  }
+}
 
   # -------------------------
   # IMAGE
@@ -114,7 +146,7 @@
       }
 
       import lb_settings
-      import passive_health_checks
+      import passive_heaalth_checks
 
       header_up Host {upstream_hostport}
       header_up X-Forwarded-Proto {scheme}
