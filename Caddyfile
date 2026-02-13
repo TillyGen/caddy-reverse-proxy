@@ -1,86 +1,38 @@
-# global options
-{
-	admin off # theres no need for the admin api in railway's environment
-	persist_config off # storage isn't persistent anyway
-	auto_https off # railway handles https for us, this could in some cases cause issues if left enabled
-	# runtime logs
-	log {
-		format json # set runtime log format to json mode 
-	}
-	# server options
-	servers {
-		trusted_proxies static private_ranges # trust railway's proxy
-	}
-}
+# Routes:
+# - api.tillygen.de/chat/*  -> chat-service
+# - api.tillygen.de/image/* -> image-service
+#
+# NOTE:
+# - handle_path removes the prefix (/chat or /image) before forwarding.
+#   Example: /chat/messages -> /messages on chat-service
+# - If you want to keep the prefix, replace handle_path with handle.
 
-(lb_settings) {
-	lb_policy round_robin
-	lb_retries 100
-	lb_try_duration 10s
-	lb_try_interval 250ms
-}
+api.tillygen.de {
+	encode gzip zstd
 
-(passive_health_checks) {
-	fail_duration 60s
-	max_fails 300
-	unhealthy_latency 5s
-	unhealthy_request_count 200
-}
-
-# site block, listens on the $PORT environment variable, automatically assigned by railway
-:{$PORT} {
-	# access logs
-	log {
-		format json # set access log format to json mode
+	# Basic health endpoint
+	handle /health {
+		respond "ok" 200
 	}
 
-	# proxy all requests for /* to the frontend, configure these variables in the service settings
-	reverse_proxy {
-		# for private networking replicas are exposed as multiple dns results, use those dns results as the upstreams
-		dynamic a {
-			name {$FRONTEND_DOMAIN}
-			port {$FRONTEND_PORT}
-			refresh 1s
-			dial_timeout 30s
-			versions ipv4 ipv6
-		}
-
-		# configure load balancing settings
-		import lb_settings
-
-		# configure passive health checks
-		import passive_health_checks
-
-		# sets the Host header to the header to the dynamic name and port options
-		header_up Host {upstream_hostport}
-	}
-
-	# the handle_path directive WILL strip /api/ from the path before proxying
-	# use `handle` instead of `handle_path` if you dont want to strip the /api/ path
-	# this is needed if your backend's api routes don't start with /api/
-	# change paths as needed
-	handle_path {$BACKEND_PATH:/api}/* {
-		# the /api/ prefix WILL be stripped from the uri sent to the proxy host
-		#
-		# proxy all requests for /api/* to the backend, configure this variable in the service settings
-		reverse_proxy {
-			# for private networking replicas are exposed as multiple dns results, use those dns results as the upstreams
-			dynamic a {
-				name {$BACKEND_DOMAIN}
-				port {$BACKEND_PORT}
-				refresh 1s
-				dial_timeout 30s
-				versions ipv4 ipv6
-			}
-
-			# configure load balancing settings
-			import lb_settings
-
-			# configure passive health checks
-			import passive_health_checks
-
-			# sets the Host header to the header to the dynamic name and port options
-			header_up Host {upstream_hostport}
+	# CHAT
+	handle_path /chat/* {
+		reverse_proxy chat-service.railway.internal:8080 {
+			header_up X-Forwarded-Proto {scheme}
+			header_up X-Forwarded-Host {host}
+			header_up X-Forwarded-For {remote_host}
 		}
 	}
+
+	# IMAGE
+	handle_path /image/* {
+		reverse_proxy image-service.railway.internal:8080 {
+			header_up X-Forwarded-Proto {scheme}
+			header_up X-Forwarded-Host {host}
+			header_up X-Forwarded-For {remote_host}
+		}
+	}
+
+	# Fallback
+	respond "Not found" 404
 }
