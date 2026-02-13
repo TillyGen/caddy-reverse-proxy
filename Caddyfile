@@ -28,16 +28,22 @@
 }
 
 :{$PORT} {
+  # access logs
   log {
     format json
   }
 
-  # DEBUG health (Gateway)
+  # gateway health
   respond /health "gateway-ok" 200
 
-  # AI_CHAT -> ai-chat (Prefix bleibt erhalten)
-  # /ai_chat/stream bleibt /ai_chat/stream im Backend
-  handle /ai_chat/* {
+  # =========================
+  # AI_CHAT -> ai-chat
+  # Extern: /ai_chat/*
+  # Intern: /* (Prefix wird entfernt)
+  #   /ai_chat/health -> /health
+  #   /ai_chat/stream -> /stream
+  # =========================
+  handle_path /ai_chat/* {
     reverse_proxy {
       dynamic a {
         name ai-chat.railway.internal
@@ -57,9 +63,13 @@
     }
   }
 
-  # IMAGE -> ai-image (Prefix bleibt erhalten)
-  # /image/... bleibt /image/... im Backend
-  handle /image/* {
+  # =========================
+  # IMAGE -> ai-image
+  # Extern: /image/*
+  # Intern: /* (Prefix wird entfernt)
+  #   /image/health -> /health
+  # =========================
+  handle_path /image/* {
     reverse_proxy {
       dynamic a {
         name ai-image.railway.internal
@@ -79,6 +89,6 @@
     }
   }
 
-  # Fallback
+  # fallback
   respond "Not found" 404
 }
