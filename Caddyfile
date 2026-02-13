@@ -32,17 +32,11 @@
     format json
   }
 
-  # ---------
   # DEBUG health (Gateway)
-  # ---------
-  handle = /health {
-    respond "gateway-ok" 200
-  }
+  respond /health "gateway-ok" 200
 
-  # ---------
   # CHAT -> ai-chat (prefix wird entfernt)
-  # /chat/health  -> /health
-  # ---------
+  # /chat/health -> /health
   handle_path /chat/* {
     reverse_proxy {
       dynamic a {
@@ -52,16 +46,19 @@
         dial_timeout 30s
         versions ipv4 ipv6
       }
+
       import lb_settings
       import passive_health_checks
+
       header_up Host {upstream_hostport}
+      header_up X-Forwarded-Proto {scheme}
+      header_up X-Forwarded-Host {host}
+      header_up X-Forwarded-For {remote_host}
     }
   }
 
-  # ---------
   # IMAGE -> ai-image (prefix wird entfernt)
   # /image/health -> /health
-  # ---------
   handle_path /image/* {
     reverse_proxy {
       dynamic a {
@@ -71,16 +68,17 @@
         dial_timeout 30s
         versions ipv4 ipv6
       }
+
       import lb_settings
       import passive_health_checks
+
       header_up Host {upstream_hostport}
+      header_up X-Forwarded-Proto {scheme}
+      header_up X-Forwarded-Host {host}
+      header_up X-Forwarded-For {remote_host}
     }
   }
 
-  # ---------
-  # FALLBACK (optional: z.B. Frontend)
-  # ---------
-  handle {
-    respond "Not found" 404
-  }
+  # Fallback
+  respond "Not found" 404
 }
