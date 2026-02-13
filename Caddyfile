@@ -35,9 +35,9 @@
   # DEBUG health (Gateway)
   respond /health "gateway-ok" 200
 
-  # CHAT -> ai-chat (prefix wird entfernt)
-  # /chat/health -> /health
-  handle_path /chat/* {
+  # AI_CHAT -> ai-chat (Prefix bleibt erhalten)
+  # /ai_chat/stream bleibt /ai_chat/stream im Backend
+  handle /ai_chat/* {
     reverse_proxy {
       dynamic a {
         name ai-chat.railway.internal
@@ -57,9 +57,9 @@
     }
   }
 
-  # IMAGE -> ai-image (prefix wird entfernt)
-  # /image/health -> /health
-  handle_path /image/* {
+  # IMAGE -> ai-image (Prefix bleibt erhalten)
+  # /image/... bleibt /image/... im Backend
+  handle /image/* {
     reverse_proxy {
       dynamic a {
         name ai-image.railway.internal
