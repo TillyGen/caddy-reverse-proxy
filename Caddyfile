@@ -178,7 +178,7 @@
   # -------------------------
   # OCR
   # -------------------------
-  handle /ocr* {
+  handle_path /ocr* {
     reverse_proxy {
       dynamic a {
         name ocr.railway.internal
@@ -212,8 +212,6 @@
       header_down -Access-Control-Max-Age
     }
   }
-
-
 
   # -------------------------
   # Fallback
