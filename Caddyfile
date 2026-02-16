@@ -27,6 +27,11 @@
 }
 
 :{$PORT} {
+  @noisy_scans {
+    path /.git /.git/*
+  }
+  log_skip @noisy_scans
+
   log {
     format json
   }
