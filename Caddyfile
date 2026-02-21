@@ -73,7 +73,7 @@
   # -------------------------
   # AI_CHAT (SSE-safe)
   # -------------------------
-  handle /ai_chat/* {
+  handle /chat/* {
     reverse_proxy {
       dynamic a {
         name ai-chat.railway.internal
