@@ -5,6 +5,7 @@
 
   log {
     format json
+    level ERROR
   }
 
   servers {
@@ -27,15 +28,6 @@
 }
 
 :{$PORT} {
-  @noisy_scans {
-    path /.git /.git/*
-  }
-  log_skip @noisy_scans
-
-  log {
-    format json
-  }
-
   # -------------------------
   # Global CORS (ALL responses, incl. 4xx/5xx)
   # -------------------------
