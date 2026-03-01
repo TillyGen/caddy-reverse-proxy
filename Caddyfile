@@ -136,41 +136,40 @@
   # -------------------------
   # Image Resizer
   # -------------------------
+  handle /image_resize* {
+    reverse_proxy {
+      dynamic a {
+        name image-resizer.railway.internal
+        port 8080
+        refresh 1s
+        dial_timeout 30s
+        versions ipv4
+      }
 
- handle /image_resize* {
-  reverse_proxy {
-    dynamic a {
-      name image-resizer.railway.internal
-      port 8080
-      refresh 1s
-      dial_timeout 30s
-      versions ipv4
+      lb_retries 0
+      lb_try_duration 0s
+      lb_try_interval 0s
+
+      transport http {
+        versions 1.1
+        response_header_timeout 60s
+        read_timeout 300s
+        write_timeout 300s
+      }
+
+      header_up Host {upstream_hostport}
+      header_up X-Forwarded-Proto {scheme}
+      header_up X-Forwarded-Host {host}
+      header_up X-Forwarded-For {remote_host}
+
+      header_down -Access-Control-Allow-Origin
+      header_down -Access-Control-Allow-Methods
+      header_down -Access-Control-Allow-Headers
+      header_down -Access-Control-Allow-Credentials
+      header_down -Access-Control-Expose-Headers
+      header_down -Access-Control-Max-Age
     }
-
-    lb_retries 0
-    lb_try_duration 0s
-    lb_try_interval 0s
-
-    transport http {
-      versions 1.1
-      response_header_timeout 60s
-      read_timeout 300s
-      write_timeout 300s
-    }
-
-    header_up Host {upstream_hostport}
-    header_up X-Forwarded-Proto {scheme}
-    header_up X-Forwarded-Host {host}
-    header_up X-Forwarded-For {remote_host}
-
-    header_down -Access-Control-Allow-Origin
-    header_down -Access-Control-Allow-Methods
-    header_down -Access-Control-Allow-Headers
-    header_down -Access-Control-Allow-Credentials
-    header_down -Access-Control-Expose-Headers
-    header_down -Access-Control-Max-Age
   }
-}
 
   # -------------------------
   # OCR
@@ -210,7 +209,7 @@
     }
   }
 
-    # -------------------------
+  # -------------------------
   # AI_STREAM (SSE-safe)
   # -------------------------
   handle /ai_stream/* {
@@ -250,47 +249,44 @@
     }
   }
 
-
   # -------------------------
   # PDF
   # -------------------------
-@pdf path /pdf /pdf/*
-handle @pdf {
-  reverse_proxy {
-    dynamic a {
-      name pdf-generator.railway.internal
-      port 8080
-      refresh 1s
-      dial_timeout 30s
-      versions ipv4
+  @pdf path /pdf /pdf/*
+  handle @pdf {
+    reverse_proxy {
+      dynamic a {
+        name pdf-generator.railway.internal
+        port 8080
+        refresh 1s
+        dial_timeout 30s
+        versions ipv4
+      }
+
+      lb_retries 0
+      lb_try_duration 0s
+      lb_try_interval 0s
+
+      transport http {
+        versions 1.1
+        response_header_timeout 300s
+        read_timeout 300s
+        write_timeout 300s
+      }
+
+      header_up Host {upstream_hostport}
+      header_up X-Forwarded-Proto {scheme}
+      header_up X-Forwarded-Host {host}
+      header_up X-Forwarded-For {remote_host}
+
+      header_down -Access-Control-Allow-Origin
+      header_down -Access-Control-Allow-Methods
+      header_down -Access-Control-Allow-Headers
+      header_down -Access-Control-Allow-Credentials
+      header_down -Access-Control-Expose-Headers
+      header_down -Access-Control-Max-Age
     }
-
-    lb_retries 0
-    lb_try_duration 0s
-    lb_try_interval 0s
-
-    transport http {
-      versions 1.1
-      response_header_timeout 300s
-      read_timeout 300s
-      write_timeout 300s
-    }
-
-    header_up Host {upstream_hostport}
-    header_up X-Forwarded-Proto {scheme}
-    header_up X-Forwarded-Host {host}
-    header_up X-Forwarded-For {remote_host}
-
-    header_down -Access-Control-Allow-Origin
-    header_down -Access-Control-Allow-Methods
-    header_down -Access-Control-Allow-Headers
-    header_down -Access-Control-Allow-Credentials
-    header_down -Access-Control-Expose-Headers
-    header_down -Access-Control-Max-Age
   }
-}
-
-
 
   # -------------------------
   # Fallback
