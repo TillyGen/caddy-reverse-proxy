@@ -48,12 +48,91 @@
   }
 
   # -------------------------
-  # Health (proxy to ai-structuring)
+  # Health checks (per service, for Uptime Kuma)
   # -------------------------
-  handle /health {
+  handle /health/ai-chat {
+    rewrite * /health
+    reverse_proxy {
+      dynamic a {
+        name ai-chat.railway.internal
+        port 8080
+        refresh 1s
+        dial_timeout 30s
+        versions ipv4
+      }
+    }
+  }
+
+  handle /health/ai-struct {
+    rewrite * /health
     reverse_proxy {
       dynamic a {
         name ai-structuring.railway.internal
+        port 8080
+        refresh 1s
+        dial_timeout 30s
+        versions ipv4
+      }
+    }
+  }
+
+  handle /health/image-resizer {
+    rewrite * /health
+    reverse_proxy {
+      dynamic a {
+        name image-resizer.railway.internal
+        port 8080
+        refresh 1s
+        dial_timeout 30s
+        versions ipv4
+      }
+    }
+  }
+
+  handle /health/ocr {
+    rewrite * /health
+    reverse_proxy {
+      dynamic a {
+        name ocr.railway.internal
+        port 8080
+        refresh 1s
+        dial_timeout 30s
+        versions ipv4
+      }
+    }
+  }
+
+  handle /health/ai-stream {
+    rewrite * /health
+    reverse_proxy {
+      dynamic a {
+        name ai-stream.railway.internal
+        port 8080
+        refresh 1s
+        dial_timeout 30s
+        versions ipv4
+      }
+    }
+  }
+
+  handle /health/ai-image-generator {
+    rewrite * /health
+    reverse_proxy {
+      dynamic a {
+        name ai-image-generator.railway.internal
+        port 8080
+        refresh 1s
+        dial_timeout 30s
+        versions ipv4
+      }
+    }
+  }
+
+  handle /health/pdf {
+    rewrite * /health
+    reverse_proxy {
+      dynamic a {
+        name pdf-generator.railway.internal
         port 8080
         refresh 1s
         dial_timeout 30s
