@@ -401,6 +401,42 @@ handle /api/image/* {
     }
   }
 
+    # -------------------------
+  # Video Processor
+  # -------------------------
+  handle /video/* {
+    uri strip_prefix /video
+    reverse_proxy {
+      dynamic a {
+        name video-processor.railway.internal
+        port 8080
+        refresh 1s
+        dial_timeout 30s
+        versions ipv4
+      }
+      lb_retries 0
+      lb_try_duration 0s
+      lb_try_interval 0s
+      transport http {
+        versions 1.1
+        response_header_timeout 600s
+        read_timeout 600s
+        write_timeout 600s
+      }
+      header_up Host {upstream_hostport}
+      header_up X-Forwarded-Proto {scheme}
+      header_up X-Forwarded-Host {host}
+      header_up X-Forwarded-For {remote_host}
+      header_down -Access-Control-Allow-Origin
+      header_down -Access-Control-Allow-Methods
+      header_down -Access-Control-Allow-Headers
+      header_down -Access-Control-Allow-Credentials
+      header_down -Access-Control-Expose-Headers
+      header_down -Access-Control-Max-Age
+    }
+  }
+
+
   # -------------------------
   # Fallback
   # -------------------------
