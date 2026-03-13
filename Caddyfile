@@ -443,7 +443,7 @@ handle /api/image/* {
     reverse_proxy {
       dynamic a {
         name ai-chat-v2.railway.internal
-        port 3000
+        port 8080
         refresh 1s
         dial_timeout 30s
         versions ipv4
