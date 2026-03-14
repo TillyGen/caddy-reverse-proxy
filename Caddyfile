@@ -439,7 +439,7 @@ handle /api/image/* {
     # -------------------------
   # AI Agent v2 (SSE-safe)
   # -------------------------
-  handle /api/agent/* {
+  handle /agent/* {
     reverse_proxy {
       dynamic a {
         name ai-chat-v2.railway.internal
