@@ -47,21 +47,6 @@
     respond "" 204
   }
 
-  # -------------------------
-  # Health checks (per service, for Uptime Kuma)
-  # -------------------------
-  handle /health/ai-chat {
-    rewrite * /health
-    reverse_proxy {
-      dynamic a {
-        name ai-chat.railway.internal
-        port 8080
-        refresh 1s
-        dial_timeout 30s
-        versions ipv4
-      }
-    }
-  }
 
   handle /health/ai-struct {
     rewrite * /health
@@ -141,76 +126,6 @@
     }
   }
 
-  # -------------------------
-  # AI_CHAT (SSE-safe)
-  # -------------------------
-  handle /chat/* {
-    reverse_proxy {
-      dynamic a {
-        name ai-chat.railway.internal
-        port 8080
-        refresh 1s
-        dial_timeout 30s
-        versions ipv4
-      }
-
-      lb_retries 0
-      lb_try_duration 0s
-      lb_try_interval 0s
-
-      flush_interval -1
-      transport http {
-        versions 1.1
-        response_header_timeout 0
-        read_timeout 0
-        write_timeout 0
-      }
-
-      header_up Host {upstream_hostport}
-      header_up X-Forwarded-Proto {scheme}
-      header_up X-Forwarded-Host {host}
-      header_up X-Forwarded-For {remote_host}
-      header_up Connection "keep-alive"
-
-      header_down -Access-Control-Allow-Origin
-      header_down -Access-Control-Allow-Methods
-      header_down -Access-Control-Allow-Headers
-      header_down -Access-Control-Allow-Credentials
-      header_down -Access-Control-Expose-Headers
-      header_down -Access-Control-Max-Age
-    }
-  }
-
-  # -------------------------
-  # AI_STRUCT
-  # -------------------------
-  handle /ai_struct/* {
-    reverse_proxy {
-      dynamic a {
-        name ai-structuring.railway.internal
-        port 8080
-        refresh 1s
-        dial_timeout 30s
-        versions ipv4
-      }
-
-      lb_retries 0
-      lb_try_duration 0s
-      lb_try_interval 0s
-
-      header_up Host {upstream_hostport}
-      header_up X-Forwarded-Proto {scheme}
-      header_up X-Forwarded-Host {host}
-      header_up X-Forwarded-For {remote_host}
-
-      header_down -Access-Control-Allow-Origin
-      header_down -Access-Control-Allow-Methods
-      header_down -Access-Control-Allow-Headers
-      header_down -Access-Control-Allow-Credentials
-      header_down -Access-Control-Expose-Headers
-      header_down -Access-Control-Max-Age
-    }
-  }
 
   # -------------------------
   # Image Resizer
@@ -437,12 +352,12 @@ handle /api/image/* {
   }
 
     # -------------------------
-  # AI Agent v2 (SSE-safe)
+  # AI Agent (SSE-safe)
   # -------------------------
   handle /agent/* {
     reverse_proxy {
       dynamic a {
-        name ai-chat-v2.railway.internal
+        name ai-chat.railway.internal
         port 8080
         refresh 1s
         dial_timeout 30s
