@@ -126,11 +126,10 @@
     }
   }
 
-
   # -------------------------
-  # Image Resizer
+  # Upload Service
   # -------------------------
-  handle /image_resize* {
+  handle /upload {
     reverse_proxy {
       dynamic a {
         name image-resizer.railway.internal
@@ -139,23 +138,19 @@
         dial_timeout 30s
         versions ipv4
       }
-
       lb_retries 0
       lb_try_duration 0s
       lb_try_interval 0s
-
       transport http {
         versions 1.1
-        response_header_timeout 60s
+        response_header_timeout 120s
         read_timeout 300s
         write_timeout 300s
       }
-
       header_up Host {upstream_hostport}
       header_up X-Forwarded-Proto {scheme}
       header_up X-Forwarded-Host {host}
       header_up X-Forwarded-For {remote_host}
-
       header_down -Access-Control-Allow-Origin
       header_down -Access-Control-Allow-Methods
       header_down -Access-Control-Allow-Headers
@@ -164,6 +159,7 @@
       header_down -Access-Control-Max-Age
     }
   }
+
 
   # -------------------------
   # OCR
